@@ -1,0 +1,41 @@
+# Local credentials (keep the shareable template)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python and Node environments / generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+node_modules/
+dist/
+build/
+coverage/
+*.log
+*.tsbuildinfo
+
+# Runtime data, local validation, disk images and backups
+SaaSBackend/data/
+SaaSBackend/logs/
+validation/
+output/
+runtime/
+*.db
+*.db-*
+*.sqlite*
+*.vhdx
+*.zip
+*.bak
+*~
+
+# Machine-specific files
+.idea/
+.DS_Store
+Thumbs.db

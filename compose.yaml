@@ -1,0 +1,67 @@
+name: saas
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-saas-local-password}
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, -a, '${REDIS_PASSWORD:-saas-local-password}', ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    environment:
+      IS_PERSISTENT: 'TRUE'
+      PERSIST_DIRECTORY: /chroma/chroma
+      ANONYMIZED_TELEMETRY: 'FALSE'
+    volumes: [chroma-data:/chroma/chroma]
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/v1/heartbeat")']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+  echomind:
+    build: {context: ./SaaSBackend, target: production}
+    env_file: [./SaaSBackend/.env]
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:-saas-local-password}@redis:6379/0
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: '8000'
+      ECHOMIND_SKILLS_DIR: /app/skills
+      MCP_SERVERS_CONFIG: /app/config/mcp_servers.json
+    ports: ['127.0.0.1:8010:8000']
+    volumes:
+      - app-data:/app/data
+      - ./SaaSBackend/skills:/app/skills:ro
+    depends_on:
+      redis: {condition: service_healthy}
+      chromadb: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health")']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    restart: unless-stopped
+  frontend:
+    build: ./SaaSFrontend
+    ports: ['127.0.0.1:5175:80']
+    environment: {PYTHON_API_URL: /api/python}
+    depends_on: {echomind: {condition: service_healthy}}
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ['127.0.0.1:9091:9090']
+    volumes:
+      - ./SaaSBackend/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+volumes:
+  redis-data:
+  chroma-data:
+  app-data:
+  prometheus-data:

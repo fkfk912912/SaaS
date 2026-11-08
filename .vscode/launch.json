@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "SaaS",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/Start-SaaS.ps1",
+      "cwd": "${workspaceFolder}",
+      "createTemporaryIntegratedConsole": true
+    }
+  ]
+}
